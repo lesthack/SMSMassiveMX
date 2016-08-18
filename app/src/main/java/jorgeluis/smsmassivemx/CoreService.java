@@ -27,7 +27,7 @@ import android.util.Log;
 @TargetApi(Build.VERSION_CODES.GINGERBREAD)
 public class CoreService extends Service {
 
-    static final Integer TIME_LISTENER_SMS = 10*(1000);
+    static final Integer TIME_LISTENER_SMS = 60*(1000);
     static final String URL_SMS_LIST = "https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/870557e2aa72eb2e3edce56c7c869a5b0d41eea9/sms.json";
 
     @Nullable
@@ -35,6 +35,7 @@ public class CoreService extends Service {
     public IBinder onBind(Intent intent) {
         return null;
     }
+    private HttpService webserver = new HttpService(8080);
 
     @Override
     public void onStart(Intent intent, int startId) {
@@ -43,12 +44,18 @@ public class CoreService extends Service {
 
         Log.i("CoreService", "CoreService started");
 
+        try {
+            webserver.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         Thread listener_sms = new Thread() {
             public void run() {
                 try {
                     while(true){
                         Log.i("CoreService", "Running Service");
-                        JSONArray jsonArray = readSMS();
+                        //JSONArray jsonArray = readSMS();
                         Thread.sleep(TIME_LISTENER_SMS);
                     }
                 } catch (InterruptedException e) {
@@ -57,7 +64,7 @@ public class CoreService extends Service {
             }
         };
 
-        listener_sms.start();
+        //listener_sms.start();
     }
 
     @Override
@@ -65,6 +72,7 @@ public class CoreService extends Service {
         // TODO Auto-generated method stub
         super.onDestroy();
         Log.i("CoreService", "CoreService destroyed");
+        webserver.stop();
     }
 
     @Override
