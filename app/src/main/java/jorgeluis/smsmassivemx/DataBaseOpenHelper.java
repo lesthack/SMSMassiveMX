@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
 
+import org.json.JSONArray;
+
 /**
  * Created by lesthack on 19/08/16.
  */
@@ -39,6 +41,8 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value) values('time_dispatch','60');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','0.5');");
         db.execSQL("INSERT INTO parameter(name, value) values('sms_by_dispatch','30');");
+        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/39581b9c5e33406c3c46dc878638e5722b43d174/sms.json');");
+        db.execSQL("INSERT INTO parameter(name, value) values('webhook','');");
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(5), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN);");
 
@@ -49,28 +53,34 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         // TODO Auto-generated method stub
     }
 
-    public boolean addSMS(String launch_date, String phone, String message){
+    public void addSMS(String launch_date, String phone, String message){
         try{
-            db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message);", new String[]{"simple", launch_date, phone, message});
-            return true;
+            db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message) VALUES(?, ?, ?, ?);", new String[]{"simple", launch_date, phone, message});
         }
         catch(Exception e){
             Log.w("DataBaseOpenHelper", e.getMessage());
         }
-        return false;
+    }
+
+    private void insertSMS(String campaign, String launch_date, String phone, String message, SQLiteDatabase db_medium){
+        String[] parameters = {campaign, launch_date, phone, message, campaign, launch_date, phone, message};
+        db_medium.execSQL("" +
+            "INSERT INTO sms(campaign, launch_date, phone, message)" +
+            "SELECT ?,?,?,? " +
+            "WHERE NOT EXISTS(SELECT 1 FROM sms WHERE campaign=? AND launch_date=? AND phone=? AND message=?)" +
+        "", parameters);
     }
 
     /*
     *   Un mensaje - array numeros
     * */
-    public boolean addCampaignSMS(String campaign, String launch_date, String phones[], String message, Boolean cast){
-        db_writer.beginTransaction();
+    public void addCampaignSMS(String campaign, String launch_date, String phones[], String message, Boolean cast){
         try{
+            db_writer.beginTransaction();
             for(int i=0;i<phones.length;i++){
-                db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message);", new String[]{campaign, launch_date, phones[i], message});
+                insertSMS(campaign, launch_date, phones[i], message, db_writer);
             }
             db_writer.setTransactionSuccessful();
-            return true;
         }
         catch(Exception e){
             e.printStackTrace();
@@ -78,35 +88,32 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         finally{
             db_writer.endTransaction();
         }
-        return false;
     }
 
     /*
     *   array mensajes - array numeros donde si cast es verdadero, entonces len(array mensajes) == len(array numeros)
     * */
-    public boolean addCampaignSMS(String campaign, String launch_date, String phones[], String message[], Boolean cast){
-        db_writer.beginTransaction();
+    public void addCampaignSMS(String campaign, String launch_date, String phones[], String message[], Boolean cast){
         try{
-            if(cast){
+            db_writer.beginTransaction();
+            if(!cast){
                 for(int i=0; i<message.length; i++){
                     for(int j=0; j<phones.length; j++){
-                        db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message);", new String[]{campaign, launch_date, phones[j], message[i]});
+                        insertSMS(campaign, launch_date, phones[j], message[i], db_writer);
                     }
                 }
             }
             else{
                 if(phones.length==message.length){
                     for(int i=0;i<phones.length;i++){
-                        db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message);", new String[]{campaign, launch_date, phones[i], message[i]});
+                        insertSMS(campaign, launch_date, phones[i], message[i], db_writer);
                     }
-
                 }
                 else{
                     throw new CampaignsException("The length between phones and messages is not equals.");
                 }
             }
             db_writer.setTransactionSuccessful();
-            return true;
         }
         catch(Exception e){
             e.printStackTrace();
@@ -114,7 +121,12 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         finally{
             db_writer.endTransaction();
         }
-        return false;
+    }
+
+    public void addCampaignSMS(String campaign, String launch_date, JSONArray phones, JSONArray message, Boolean cast) {
+        String[] phones_array = phones.toString().split(",");
+        String[] messages_array = message.toString().split(",");
+        addCampaignSMS(campaign, launch_date, phones_array, messages_array, cast);
     }
 
     public String getParameter(String name){
@@ -161,13 +173,6 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         }
 
         return checkDB != null ? true : false;
-    }
-}
-
-class CampaignsException extends Exception {
-
-    public CampaignsException(String message){
-        super(message);
     }
 
 }
