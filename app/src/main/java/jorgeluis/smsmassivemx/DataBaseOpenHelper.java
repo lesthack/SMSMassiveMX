@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.util.Log;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Created by lesthack on 19/08/16.
@@ -65,8 +67,8 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     private void insertSMS(String campaign, String launch_date, String phone, String message, SQLiteDatabase db_medium){
         String[] parameters = {campaign, launch_date, phone, message, campaign, launch_date, phone, message};
         db_medium.execSQL("" +
-            "INSERT INTO sms(campaign, launch_date, phone, message)" +
-            "SELECT ?,?,?,? " +
+            "INSERT INTO sms(campaign, launch_date, phone, message, sent)" +
+            "SELECT ?,?,?,?,0 " +
             "WHERE NOT EXISTS(SELECT 1 FROM sms WHERE campaign=? AND launch_date=? AND phone=? AND message=?)" +
         "", parameters);
     }
@@ -127,6 +129,39 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         String[] phones_array = phones.toString().split(",");
         String[] messages_array = message.toString().split(",");
         addCampaignSMS(campaign, launch_date, phones_array, messages_array, cast);
+    }
+
+    public JSONArray getSMSListUnSent(String launch_date, int limit) throws JSONException {
+        Cursor cursor = db_reader.rawQuery("SELECT id, campaign, phone, message FROM sms WHERE sent=0 AND launch_date <= ? LIMIT ? OFFSET 0", new String[]{launch_date, String.valueOf(limit)});
+        //Cursor cursor = db_reader.rawQuery("SELECT id, campaign, phone, message FROM sms WHERE sent=0 AND launch_date <", null);
+        JSONArray sms_list = new JSONArray();
+        if (cursor.moveToFirst()) {
+            do {
+                JSONObject item = new JSONObject();
+                item.put("id", cursor.getString(0));
+                item.put("campaign", cursor.getString(1));
+                item.put("phone", cursor.getString(2));
+                item.put("message", cursor.getString(3));
+                sms_list.put(item);
+            } while (cursor.moveToNext());
+        }
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+        return sms_list;
+    }
+
+    public void changeStatusSMS(JSONArray list_sms) throws JSONException {
+        for(int i=0; i<list_sms.length(); i++){
+            JSONObject item = list_sms.getJSONObject(i);
+            if(item.has("sent")){
+
+            }
+        }
+    }
+
+    public void setSendedSMS(Integer id){
+        db_writer.execSQL("UPDATE sms SET sended = 1 WHERE id = " + id);
     }
 
     public String getParameter(String name){

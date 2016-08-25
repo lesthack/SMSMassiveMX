@@ -18,7 +18,7 @@ import org.json.JSONObject;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import 	java.util.Random;
+import java.util.Random;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
+import android.telephony.SmsManager;
 import android.util.Log;
 
 @TargetApi(Build.VERSION_CODES.GINGERBREAD)
@@ -48,6 +49,10 @@ public class CoreService extends Service {
     private Integer SMS_BY_DISPATCH;
     private DataBaseOpenHelper localdb;
     private HttpService webserver = new HttpService(8080);
+    private boolean free = true;
+    private SmsManager sm;
+    private Thread listener_sms;
+    private Thread listener_dispatch;
     private int id_service;
 
     private DateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
@@ -64,6 +69,9 @@ public class CoreService extends Service {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
+
+        // Manager SMS
+        sm = SmsManager.getDefault();
 
         // Abriendo base de datos
         localdb = new DataBaseOpenHelper(this);
@@ -91,26 +99,48 @@ public class CoreService extends Service {
                 e.printStackTrace();
             }
         }
-        Thread listener_dispatch = new Thread() {
+
+        listener_dispatch = new Thread() {
             public void run() {
                 try {
-                    while (true) {
+                    while (free) {
+                        Log.i("CoreService", "Running Service Dispatch: " + id_service);
+                        String launch_date = String.format("%s %s", new String[]{date_format.format(new Date()), hour_format.format(new Date())});
+                        free = false;
+                        JSONArray list_sms = localdb.getSMSListUnSent(launch_date, SMS_BY_DISPATCH);
+                        // Send sms
+                        for(int i=0; i<list_sms.length(); i++){
+                            JSONObject item = list_sms.getJSONObject(i);
+                            try{
+                                //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
+                                Log.i("CoreService","Message sent: " + item.getString("phone") + "->" + item.getString("message"));
+                                item.put("sent", 1);
+                            }
+                            catch(Exception e){
+                                Log.e("CoreService","Error to try send message: " + e.getMessage());
+                                item.put("sent", 0);
+                            }
+                        }
+                        free =  true;
                         Thread.sleep(TIME_DISPATCH);
                     }
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
         };
 
-        Thread listener_sms = new Thread() {
+        listener_sms = new Thread() {
             public void run() {
                 try {
-                    while(true){
-                        Log.i("CoreService", "Running Service: " + id_service);
+                    while(free){
+                        Log.i("CoreService", "Running Service Reader: " + id_service);
                         JSONArray json_content = readSMS();
                         JSONObject parameters = new JSONObject();
                         if(json_content != null){
+                            free = false;
                             for (int i = 0; i < json_content.length(); i++) {
                                 try {
                                     JSONObject campaign = json_content.getJSONObject(i);
@@ -154,6 +184,7 @@ public class CoreService extends Service {
 
                                 }
                             }
+                            free = true;
                         }
                         Thread.sleep(TIME_SCAN_HOST);
                     }
@@ -163,7 +194,7 @@ public class CoreService extends Service {
             }
         };
 
-        //listener_sms.start();
+        listener_sms.start();
         listener_dispatch.start();
     }
 
@@ -180,10 +211,18 @@ public class CoreService extends Service {
         }
     }
 
-    private String getIMEI(){
-        String imei = android.provider.Settings.System.getString(this.getContentResolver(), android.provider.Settings.System.ANDROID_ID);
-        if(imei==null) return "0000000000";
-        return imei;
+    private JSONArray readSMS(){
+        JSONArray json_content;
+        try {
+            StringBuilder text_content = getContent(HOST_WS);
+            json_content = new JSONArray(text_content.toString());
+            return json_content;
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     private StringBuilder getContent(String URI){
@@ -211,18 +250,10 @@ public class CoreService extends Service {
         return builder;
     }
 
-    private JSONArray readSMS(){
-        JSONArray json_content;
-        try {
-            StringBuilder text_content = getContent(HOST_WS);
-            json_content = new JSONArray(text_content.toString());
-            return json_content;
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return null;
+    private String getIMEI(){
+        String imei = android.provider.Settings.System.getString(this.getContentResolver(), android.provider.Settings.System.ANDROID_ID);
+        if(imei==null) return "0000000000";
+        return imei;
     }
 
     public void dispatch_webhook(JSONObject parameters){
