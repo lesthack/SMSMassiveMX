@@ -34,7 +34,7 @@ import android.util.Log;
 public class CoreService extends Service {
 
     static final boolean WEBSERVER_ACTIVE = false;
-
+    private final int SMS_LENGTH_MAX = 140;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -102,9 +102,9 @@ public class CoreService extends Service {
 
         listener_dispatch = new Thread() {
             public void run() {
-                try {
-                    while (free) {
-                        Log.i("CoreService", "Running Service Dispatch: " + id_service);
+                while (free) {
+                    try {
+                        Log.i("CoreService", "Thread Dispatch (Service " + id_service + ")");
                         String launch_date = String.format("%s %s", new String[]{date_format.format(new Date()), hour_format.format(new Date())});
                         free = false;
                         JSONArray list_sms = localdb.getSMSListUnSent(launch_date, SMS_BY_DISPATCH);
@@ -113,30 +113,41 @@ public class CoreService extends Service {
                             JSONObject item = list_sms.getJSONObject(i);
                             try{
                                 //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
-                                Log.i("CoreService","Message sent: " + item.getString("phone") + "->" + item.getString("message"));
-                                item.put("sent", 1);
+                                Log.i("CoreService","Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"));
+                                localdb.markSentSMS(item.getInt("id"));
                             }
                             catch(Exception e){
                                 Log.e("CoreService","Error to try send message: " + e.getMessage());
-                                item.put("sent", 0);
+                                localdb.markErrorSMS(item.getInt("id"));
+                                JSONObject exception_parameters = new JSONObject();
+                                try{
+                                    exception_parameters.put("type", "error");
+                                    exception_parameters.put("code", 332);
+                                    exception_parameters.put("description", e.getMessage());
+                                }
+                                catch(Exception f){
+                                    f.printStackTrace();
+                                }
+                                dispatch_webhook(exception_parameters);
                             }
+                            Thread.sleep(TIME_SLEEP_DISPATCH);
                         }
-                        free =  true;
                         Thread.sleep(TIME_DISPATCH);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                    free =  true;
                 }
             }
         };
 
         listener_sms = new Thread() {
             public void run() {
-                try {
-                    while(free){
-                        Log.i("CoreService", "Running Service Reader: " + id_service);
+                while(free){
+                    try {
+                        Log.i("CoreService", "Thread Reader (Service " + id_service + ")");
                         JSONArray json_content = readSMS();
                         JSONObject parameters = new JSONObject();
                         if(json_content != null){
@@ -155,15 +166,27 @@ public class CoreService extends Service {
 
                                         //Check 160 digits
                                         for(int j = 0; j<campaign_sms.length(); j++){
-                                            if(campaign_sms.getString(j).length()>160){
-                                                throw new CampaignsException(222, campaign_id, String.format("the sms %s is longer than 160 characters", new String[]{campaign_sms.getString(j)}));
+                                            if(campaign_sms.getString(j).length()>SMS_LENGTH_MAX){
+                                                throw new CampaignsException(222, campaign_id, String.format("The sms \"%s\" is longer than %d characters", campaign_sms.getString(j), SMS_LENGTH_MAX));
                                             }
                                         }
 
                                         // Adding campaigns
-                                        localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
+                                        int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
+                                        if(sms_inserted>0){
+                                            Log.i("CoreService", "Adding " + sms_inserted + " SMS's of Campaign " + campaign_id);
+                                            JSONObject exception_parameters = new JSONObject();
+                                            try{
+                                                exception_parameters.put("type", "ok");
+                                                exception_parameters.put("code", 100);
+                                                exception_parameters.put("description", String.format("Campaign \"%s\" added successfull and waiting for send %d SMS's.", campaign_id, sms_inserted));
+                                            }
+                                            catch(Exception f){
+                                                f.printStackTrace();
+                                            }
+                                            dispatch_webhook(exception_parameters);
+                                        }
 
-                                        //dispatch_webhook(parameters);
                                     }
                                     else{
                                         throw new CampaignsException(221, "Id Campaign not found");
@@ -181,16 +204,18 @@ public class CoreService extends Service {
                                         f.printStackTrace();
                                     }
                                     dispatch_webhook(exception_parameters);
-
                                 }
                             }
-                            free = true;
+
                         }
+
                         Thread.sleep(TIME_SCAN_HOST);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    free = true;
                 }
+
             }
         };
 
@@ -257,8 +282,7 @@ public class CoreService extends Service {
     }
 
     public void dispatch_webhook(JSONObject parameters){
-        if(WEBHOOK.length()>0){
-            Log.i("CoreService", parameters.toString());
-        }
+        Log.i("CoreService", parameters.toString());
+        /*if(WEBHOOK.length()>0){}*/
     }
 }

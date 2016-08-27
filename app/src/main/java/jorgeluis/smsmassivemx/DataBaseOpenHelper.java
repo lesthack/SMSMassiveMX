@@ -39,14 +39,14 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
         db.execSQL("CREATE TABLE parameter(name TEXT, value TEXT);");
         db.execSQL("INSERT INTO parameter(name, value) values('version','0.1');");
-        db.execSQL("INSERT INTO parameter(name, value) values('time_scan_host','10');");
+        db.execSQL("INSERT INTO parameter(name, value) values('time_scan_host','60');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_dispatch','60');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','0.5');");
         db.execSQL("INSERT INTO parameter(name, value) values('sms_by_dispatch','30');");
-        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/39581b9c5e33406c3c46dc878638e5722b43d174/sms.json');");
+        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
         db.execSQL("INSERT INTO parameter(name, value) values('webhook','');");
 
-        db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(5), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN);");
+        db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
 
     }
 
@@ -55,32 +55,23 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         // TODO Auto-generated method stub
     }
 
-    public void addSMS(String launch_date, String phone, String message){
-        try{
-            db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message) VALUES(?, ?, ?, ?);", new String[]{"simple", launch_date, phone, message});
+    private boolean insertSMS(String campaign, String launch_date, String phone, String message, SQLiteDatabase db_medium){
+        Cursor cursor = db_reader.rawQuery("SELECT * FROM sms WHERE campaign=? AND phone=? AND message=?", new String[]{campaign, phone, message});
+        if(cursor.getCount()==0){
+            db_medium.execSQL("INSERT INTO sms(campaign, launch_date, phone, message, sent, error) VALUES(?,?,?,?,0,0)", new String[]{campaign, launch_date, phone, message});
+            return true;
         }
-        catch(Exception e){
-            Log.w("DataBaseOpenHelper", e.getMessage());
-        }
+        return false;
     }
 
-    private void insertSMS(String campaign, String launch_date, String phone, String message, SQLiteDatabase db_medium){
-        String[] parameters = {campaign, launch_date, phone, message, campaign, launch_date, phone, message};
-        db_medium.execSQL("" +
-            "INSERT INTO sms(campaign, launch_date, phone, message, sent)" +
-            "SELECT ?,?,?,?,0 " +
-            "WHERE NOT EXISTS(SELECT 1 FROM sms WHERE campaign=? AND launch_date=? AND phone=? AND message=?)" +
-        "", parameters);
-    }
-
-    /*
-    *   Un mensaje - array numeros
-    * */
-    public void addCampaignSMS(String campaign, String launch_date, String phones[], String message, Boolean cast){
+    public int addCampaignSMS(String campaign, String launch_date, String phones[], String message, Boolean cast){
+        int sms_inserted=0;
         try{
             db_writer.beginTransaction();
             for(int i=0;i<phones.length;i++){
-                insertSMS(campaign, launch_date, phones[i], message, db_writer);
+                if(insertSMS(campaign, launch_date, phones[i], message, db_writer)){
+                    sms_inserted++;
+                }
             }
             db_writer.setTransactionSuccessful();
         }
@@ -90,25 +81,28 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         finally{
             db_writer.endTransaction();
         }
+        return sms_inserted;
     }
 
-    /*
-    *   array mensajes - array numeros donde si cast es verdadero, entonces len(array mensajes) == len(array numeros)
-    * */
-    public void addCampaignSMS(String campaign, String launch_date, String phones[], String message[], Boolean cast){
+    public int addCampaignSMS(String campaign, String launch_date, String phones[], String message[], Boolean cast){
+        int sms_inserted = 0;
         try{
             db_writer.beginTransaction();
             if(!cast){
                 for(int i=0; i<message.length; i++){
                     for(int j=0; j<phones.length; j++){
-                        insertSMS(campaign, launch_date, phones[j], message[i], db_writer);
+                        if(insertSMS(campaign, launch_date, phones[j], message[i], db_writer)){
+                            sms_inserted++;
+                        }
                     }
                 }
             }
             else{
                 if(phones.length==message.length){
                     for(int i=0;i<phones.length;i++){
-                        insertSMS(campaign, launch_date, phones[i], message[i], db_writer);
+                        if(insertSMS(campaign, launch_date, phones[i], message[i], db_writer)){
+                            sms_inserted++;
+                        }
                     }
                 }
                 else{
@@ -123,17 +117,26 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         finally{
             db_writer.endTransaction();
         }
+        return sms_inserted;
     }
 
-    public void addCampaignSMS(String campaign, String launch_date, JSONArray phones, JSONArray message, Boolean cast) {
-        String[] phones_array = phones.toString().split(",");
-        String[] messages_array = message.toString().split(",");
-        addCampaignSMS(campaign, launch_date, phones_array, messages_array, cast);
+    public int addCampaignSMS(String campaign, String launch_date, JSONArray phones, JSONArray message, Boolean cast) {
+        String[] phones_array = phones.toString().replace("[","").replace("]","").replace("\"","").split(",");
+        String[] messages_array = message.toString().replace("[","").replace("]","").replace("\"","").split(",");
+        return addCampaignSMS(campaign, launch_date, phones_array, messages_array, cast);
     }
 
-    public JSONArray getSMSListUnSent(String launch_date, int limit) throws JSONException {
-        Cursor cursor = db_reader.rawQuery("SELECT id, campaign, phone, message FROM sms WHERE sent=0 AND launch_date <= ? LIMIT ? OFFSET 0", new String[]{launch_date, String.valueOf(limit)});
-        //Cursor cursor = db_reader.rawQuery("SELECT id, campaign, phone, message FROM sms WHERE sent=0 AND launch_date <", null);
+    public void addSMS(String launch_date, String phone, String message){
+        try{
+            db_writer.execSQL("INSERT INTO sms(campaign, launch_date, phone, message) VALUES(?, ?, ?, ?);", new String[]{"simple", launch_date, phone, message});
+        }
+        catch(Exception e){
+            Log.w("DataBaseOpenHelper", e.getMessage());
+        }
+    }
+
+    public JSONArray getSMSList(String query, String[] parameters) throws JSONException {
+        Cursor cursor = db_reader.rawQuery(query, parameters);
         JSONArray sms_list = new JSONArray();
         if (cursor.moveToFirst()) {
             do {
@@ -151,17 +154,20 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         return sms_list;
     }
 
-    public void changeStatusSMS(JSONArray list_sms) throws JSONException {
-        for(int i=0; i<list_sms.length(); i++){
-            JSONObject item = list_sms.getJSONObject(i);
-            if(item.has("sent")){
-
-            }
-        }
+    public JSONArray getSMSListUnSent(String launch_date, int limit) throws JSONException {
+        return getSMSList("SELECT id, campaign, phone, message FROM sms WHERE sent=0 AND error=0 AND launch_date <= ? LIMIT ? OFFSET 0", new String[]{launch_date, String.valueOf(limit)});
     }
 
-    public void setSendedSMS(Integer id){
-        db_writer.execSQL("UPDATE sms SET sended = 1 WHERE id = " + id);
+    public JSONArray getSMSList(int sent) throws JSONException {
+        return getSMSList("SELECT id, campaign, phone, message FROM sms WHERE sent=? AND error=0", new String[]{String.valueOf(sent)});
+    }
+
+    public void markSentSMS(Integer id){
+        db_writer.execSQL("UPDATE sms SET sent = 1 WHERE id = " + id);
+    }
+
+    public void markErrorSMS(Integer id){
+        db_writer.execSQL("UPDATE sms SET error = 1 WHERE id = " + id);
     }
 
     public String getParameter(String name){
