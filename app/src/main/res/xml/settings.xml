@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--PreferenceCategory
+        android:title="General">
+        <CheckBoxPreference
+            android:key="active_service"
+            android:title="Servicio Activo" />
+        <CheckBoxPreference
+            android:key="device_rooted"
+            android:editable="false"
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:title="Dispositivo Rooteado" />
+        <CheckBoxPreference
+            android:key="device_limit_sms"
+            android:editable="false"
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:title="Limite de SMS hackeado" />
+        </PreferenceCategory-->
+    <PreferenceCategory
+        android:title="Configuración WebService y WebHook">
+        <EditTextPreference android:title="Host"
+            android:key="host"
+            android:summary="URL del host a consumir el json de SMS"></EditTextPreference>
+        <EditTextPreference android:title="Webhook"
+            android:key="webhook"
+            android:summary="URL del webhook"></EditTextPreference>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Configuración de Tiempos">
+        <EditTextPreference android:title="Tiempo entre escaneos"
+            android:key="time_scan_host"
+            android:inputType="number"
+            android:defaultValue="60"
+            android:maxLength="3"
+            android:summary="Tiempo en segundos entre cada escaneo"></EditTextPreference>
+        <EditTextPreference android:title="Tiempo entre lanzamientos"
+            android:key="time_dispatch"
+            android:inputType="number"
+            android:defaultValue="60"
+            android:maxLength="3"
+            android:summary="Tiempo en segundos entre lanzamientos de sms"></EditTextPreference>
+        <EditTextPreference android:title="Mensajes por lanzamiento"
+            android:key="sms_by_dispatch"
+            android:inputType="number"
+            android:defaultValue="30"
+            android:maxLength="3"
+            android:summary="Numero de SMS a enviar por lanzamiento"></EditTextPreference>
+        <EditTextPreference android:title="Tiempo muerto entre lanzamientos"
+            android:key="time_sleep_dispatch"
+            android:inputType="number"
+            android:defaultValue="1"
+            android:maxLength="1"
+            android:summary="Tiempo en segundos a dormir despues de cada lanzamiento"></EditTextPreference>
+    </PreferenceCategory>
+</PreferenceScreen>

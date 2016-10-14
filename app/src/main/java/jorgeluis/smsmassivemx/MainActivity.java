@@ -16,14 +16,20 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
+import android.widget.CheckBox;
+import android.widget.Switch;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+
+    private DataBaseOpenHelper localdb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -35,6 +41,8 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        localdb = new DataBaseOpenHelper(this);
 
         // Starting service
         if(!isThisServiceRunning(CoreService.class)) {
@@ -71,6 +79,7 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Log.i("MainActivity", "Settings");
             return true;
         }
 
@@ -83,9 +92,10 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_manage) {
-            Log.i("MainActivity", "Tap on manage");
-        } else if (id == R.id.nav_send) {
+        if (id == R.id.nav_settings) {
+            Intent i = new Intent(this, SettingsActivity.class);
+            startActivity(i);
+        } else if (id == R.id.nav_about) {
             Log.i("MainActivity", "Tap on contact");
         }
 
@@ -106,4 +116,10 @@ public class MainActivity extends AppCompatActivity
         }
         return false;
     }
+
+    private boolean isRootedDevice(){
+        String buildTags = android.os.Build.TAGS;
+        return buildTags != null && buildTags.contains("test-keys");
+    }
+
 }

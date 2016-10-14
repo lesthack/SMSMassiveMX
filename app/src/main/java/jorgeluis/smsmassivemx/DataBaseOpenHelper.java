@@ -41,7 +41,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value) values('version','0.1');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_scan_host','60');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_dispatch','60');");
-        db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','0.5');");
+        db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','1');");
         db.execSQL("INSERT INTO parameter(name, value) values('sms_by_dispatch','30');");
         db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
         db.execSQL("INSERT INTO parameter(name, value) values('webhook','');");
