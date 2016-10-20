@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:orientation="horizontal">
+
+    <TextView
+        android:text="Elemento"
+        tools:text="Servicio"
+        android:layout_width="0dp"
+        android:layout_weight="2.5"
+        android:layout_height="wrap_content"
+        android:id="@+id/item_status_name"
+        android:textSize="18dp"
+        android:textAppearance="?attr/textAppearanceListItem"
+         />
+    <TextView
+        android:text="Valor"
+        tools:text="OFF"
+        android:layout_width="0dp"
+        android:layout_weight="0.5"
+        android:layout_height="wrap_content"
+        android:id="@+id/item_status_value"
+        android:textSize="18dp"
+        android:textAppearance="?attr/textAppearanceListItem"
+        android:textColor="@color/colorNoOK"
+        android:textStyle="bold"
+        />
+</LinearLayout>

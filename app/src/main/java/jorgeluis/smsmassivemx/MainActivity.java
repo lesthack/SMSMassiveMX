@@ -17,13 +17,22 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
 import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Switch;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
 
     private DataBaseOpenHelper localdb;
+    private ListView list_log;
+    private ListView list_status;
+    private ItemStatusAdapter mItemStatusAdapter;
+    private ItemLogAdapter mItemLogAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +53,39 @@ public class MainActivity extends AppCompatActivity
 
         localdb = new DataBaseOpenHelper(this);
 
+        boolean is_services_started = false;
+        boolean is_devices_rooted = isRootedDevice();
+
         // Starting service
         if(!isThisServiceRunning(CoreService.class)) {
             startService(new Intent(this, CoreService.class));
+            is_services_started = true;
         }
         else{
+            is_services_started = true;
             Log.i("MainActivity", "CoreServices was active.");
         }
+
+        //Asignaciones
+        list_status = (ListView) findViewById(R.id.list_status);
+        List<ItemStatus> items_status = new ArrayList<ItemStatus>();
+            items_status.add(new ItemStatus("Servicio", is_services_started));
+            items_status.add(new ItemStatus("Dispositivo rooteado", is_devices_rooted));
+            //items_status.add(new ItemStatus("Limite de SMS desactivado", false));
+        mItemStatusAdapter = new ItemStatusAdapter(getBaseContext(), items_status);
+        list_status.setAdapter(mItemStatusAdapter);
+
+        list_log = (ListView) findViewById(R.id.list_log);
+        List<ItemLog> items_log = new ArrayList<ItemLog>();
+            items_log.add(new ItemLog(1, "2016-10-20 00:41", "El servicio se ha activado satisfactoriamente"));
+            items_log.add(new ItemLog(2, "2016-10-20 00:42", "Ejemplo de Item Agregado"));
+        for(int i=3; i<100; i++){
+            items_log.add(new ItemLog(i, "2016-10-20 00:41", "Elemento " + i));
+        }
+        mItemLogAdapter = new ItemLogAdapter(getBaseContext(), items_log);
+        list_log.setAdapter(mItemLogAdapter);
+
+
     }
 
     @Override
@@ -79,7 +114,8 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            Log.i("MainActivity", "Settings");
+            Intent i = new Intent(this, SettingsActivity.class);
+            startActivity(i);
             return true;
         }
 

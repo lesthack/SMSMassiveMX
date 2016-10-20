@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <TextView
+        android:text="Fecha"
+        tools:text="2016-10-20 00:22:22"
+        android:layout_width="0dp"
+        android:layout_weight="0.8"
+        android:layout_height="wrap_content"
+        android:id="@+id/item_log_date"
+        android:textSize="9dp"
+        android:textAppearance="?attr/textAppearanceListItem"
+        />
+    <TextView
+        android:text="Evento"
+        tools:text="El servicio fue activado satisfactoriamente"
+        android:layout_width="0dp"
+        android:layout_weight="2.2"
+        android:layout_height="wrap_content"
+        android:id="@+id/item_log_text"
+        android:textSize="9dp"
+        android:textAppearance="?attr/textAppearanceListItem"
+        />
+</LinearLayout>
