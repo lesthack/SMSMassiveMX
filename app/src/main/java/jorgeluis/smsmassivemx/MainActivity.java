@@ -1,12 +1,12 @@
 package jorgeluis.smsmassivemx;
 
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.os.IBinder;
 import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -16,10 +16,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Switch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +26,13 @@ public class MainActivity extends AppCompatActivity
 
 
     private DataBaseOpenHelper localdb;
-    private ListView list_log;
-    private ListView list_status;
+    private ListView listview_log;
+    private ListView listview_status;
     private ItemStatusAdapter mItemStatusAdapter;
     private ItemLogAdapter mItemLogAdapter;
+    private int max_log_id;
+
+    private Intent service_intent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +58,8 @@ public class MainActivity extends AppCompatActivity
 
         // Starting service
         if(!isThisServiceRunning(CoreService.class)) {
-            startService(new Intent(this, CoreService.class));
+            service_intent = new Intent(this, CoreService.class);
+            startService(service_intent);
             is_services_started = true;
         }
         else{
@@ -67,25 +68,32 @@ public class MainActivity extends AppCompatActivity
         }
 
         //Asignaciones
-        list_status = (ListView) findViewById(R.id.list_status);
+        listview_status = (ListView) findViewById(R.id.list_status);
         List<ItemStatus> items_status = new ArrayList<ItemStatus>();
             items_status.add(new ItemStatus("Servicio", is_services_started));
             items_status.add(new ItemStatus("Dispositivo rooteado", is_devices_rooted));
             //items_status.add(new ItemStatus("Limite de SMS desactivado", false));
         mItemStatusAdapter = new ItemStatusAdapter(getBaseContext(), items_status);
-        list_status.setAdapter(mItemStatusAdapter);
+        listview_status.setAdapter(mItemStatusAdapter);
 
-        list_log = (ListView) findViewById(R.id.list_log);
+        listview_log = (ListView) findViewById(R.id.list_log);
         List<ItemLog> items_log = new ArrayList<ItemLog>();
+            /*
             items_log.add(new ItemLog(1, "2016-10-20 00:41", "El servicio se ha activado satisfactoriamente"));
             items_log.add(new ItemLog(2, "2016-10-20 00:42", "Ejemplo de Item Agregado"));
-        for(int i=3; i<100; i++){
-            items_log.add(new ItemLog(i, "2016-10-20 00:41", "Elemento " + i));
+            */
+        List list_logs = localdb.getLogs(50);
+        for(int i=0; i<list_logs.size(); i++){
+            String[] log = (String[]) list_logs.get(i);
+            int log_id = Integer.valueOf(log[0]);
+            if(i==0){
+                max_log_id = log_id;
+            }
+            items_log.add(new ItemLog(log_id, log[1], log[2]));
         }
+
         mItemLogAdapter = new ItemLogAdapter(getBaseContext(), items_log);
-        list_log.setAdapter(mItemLogAdapter);
-
-
+        listview_log.setAdapter(mItemLogAdapter);
     }
 
     @Override
@@ -154,8 +162,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private boolean isRootedDevice(){
-        String buildTags = android.os.Build.TAGS;
-        return buildTags != null && buildTags.contains("test-keys");
+        RootUtil root_util = new RootUtil();
+        return root_util.isDeviceRooted();
     }
 
 }

@@ -7,10 +7,14 @@ import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by lesthack on 19/08/16.
@@ -48,6 +52,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
 
+        db.execSQL("CREATE TABLE log(id INTEGER PRIMARY KEY AUTOINCREMENT, log_date DATE, log_text TEXT);");
     }
 
     @Override
@@ -62,6 +67,31 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
             return true;
         }
         return false;
+    }
+
+    public void addLog(String log){
+        try{
+            db_writer.execSQL("INSERT INTO log(log_date, log_text) VALUES(DateTime('now'), ?);", new String[]{log});
+        }
+        catch(Exception e){
+            Log.w("DataBaseOpenHelper", e.getMessage());
+        }
+    }
+
+    public List getLogs(int last_n){
+        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text FROM log ORDER BY log_date DESC LIMIT ? OFFSET 0", new String[]{String.valueOf(last_n)});
+        List<Object> list_logs = new ArrayList<Object>();
+        if (cursor.moveToFirst()) {
+            do {
+                String[] log = new String[]{String.valueOf(cursor.getInt(0)), cursor.getString(1), cursor.getString(2)};
+                list_logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        return list_logs;
     }
 
     public int addCampaignSMS(String campaign, String launch_date, String phones[], String message, Boolean cast){

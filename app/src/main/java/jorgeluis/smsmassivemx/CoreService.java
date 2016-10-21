@@ -7,6 +7,7 @@ package jorgeluis.smsmassivemx;
 import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.StrictMode;
@@ -63,7 +64,6 @@ public class CoreService extends Service {
         super.onCreate();
 
         id_service = (new Random()).nextInt(100);
-        Log.i("CoreService", "CoreService created: " + id_service);
 
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -83,6 +83,13 @@ public class CoreService extends Service {
         TIME_SLEEP_DISPATCH = (int) (Float.parseFloat(localdb.getParameter("time_sleep_dispatch"))*1000);
         SMS_BY_DISPATCH = Integer.parseInt(localdb.getParameter("sms_by_dispatch"))*1000;
         WEBHOOK = localdb.getParameter("webhook");
+
+        addLog("CoreService created: " + id_service);
+    }
+
+    private void addLog(String log_text){
+        Log.i("CoreService", log_text);
+        localdb.addLog(log_text);
     }
 
     @Override
@@ -90,7 +97,7 @@ public class CoreService extends Service {
         // TODO Auto-generated method stub
         super.onStart(intent, startId);
 
-        Log.i("CoreService", "CoreService started: " + id_service);
+        addLog("CoreService started: " + id_service);
 
         if(WEBSERVER_ACTIVE){
             try {
@@ -104,7 +111,7 @@ public class CoreService extends Service {
             public void run() {
                 while (free) {
                     try {
-                        Log.i("CoreService", "Thread Dispatch (Service " + id_service + ")");
+                        addLog("Thread Dispatch (Service " + id_service + ")");
                         String launch_date = String.format("%s %s", new String[]{date_format.format(new Date()), hour_format.format(new Date())});
                         free = false;
                         JSONArray list_sms = localdb.getSMSListUnSent(launch_date, SMS_BY_DISPATCH);
@@ -113,11 +120,11 @@ public class CoreService extends Service {
                             JSONObject item = list_sms.getJSONObject(i);
                             try{
                                 //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
-                                Log.i("CoreService","Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"));
+                                addLog("Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"));
                                 localdb.markSentSMS(item.getInt("id"));
                             }
                             catch(Exception e){
-                                Log.e("CoreService","Error to try send message: " + e.getMessage());
+                                addLog("Error to try send message: " + e.getMessage());
                                 localdb.markErrorSMS(item.getInt("id"));
                                 JSONObject exception_parameters = new JSONObject();
                                 try{
@@ -147,7 +154,7 @@ public class CoreService extends Service {
             public void run() {
                 while(free){
                     try {
-                        Log.i("CoreService", "Thread Reader (Service " + id_service + ")");
+                        addLog("Thread Reader (Service " + id_service + ")");
                         JSONArray json_content = readSMS();
                         JSONObject parameters = new JSONObject();
                         if(json_content != null){
@@ -174,7 +181,7 @@ public class CoreService extends Service {
                                         // Adding campaigns
                                         int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
                                         if(sms_inserted>0){
-                                            Log.i("CoreService", "Adding " + sms_inserted + " SMS's of Campaign " + campaign_id);
+                                            addLog("Adding " + sms_inserted + " SMS's of Campaign " + campaign_id);
                                             JSONObject exception_parameters = new JSONObject();
                                             try{
                                                 exception_parameters.put("type", "ok");
@@ -282,7 +289,8 @@ public class CoreService extends Service {
     }
 
     public void dispatch_webhook(JSONObject parameters){
-        Log.i("CoreService", parameters.toString());
+        addLog(parameters.toString());
         /*if(WEBHOOK.length()>0){}*/
     }
+
 }

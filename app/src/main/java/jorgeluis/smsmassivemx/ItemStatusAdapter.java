@@ -2,6 +2,7 @@ package jorgeluis.smsmassivemx;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
@@ -43,10 +44,12 @@ public class ItemStatusAdapter extends ArrayAdapter<ItemStatus>{
         TextItemName.setText(item.getItemName());
         TextItemValue.setText(item.getItemValueStr());
         if(item.getItemValue()){
-            TextItemValue.setTextColor(getContext().getColor(R.color.colorOK));
+            TextItemValue.setTextColor(ContextCompat.getColor(getContext(), R.color.colorOK));
+            //TextItemValue.setTextColor(Color.parseColor("#00CC00"));
         }
         else{
-            TextItemValue.setTextColor(getContext().getColor(R.color.colorNoOK));
+            TextItemValue.setTextColor(ContextCompat.getColor(getContext(), R.color.colorNoOK));
+            //TextItemValue.setTextColor(Color.parseColor("#CC0000"));
         }
 
         return convertView;

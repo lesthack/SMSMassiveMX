@@ -14,6 +14,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/item_log_date"
         android:textSize="9dp"
+        android:textColor="@color/colorPassive"
         android:textAppearance="?attr/textAppearanceListItem"
         />
     <TextView

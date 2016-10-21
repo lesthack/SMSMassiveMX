@@ -9,4 +9,5 @@
     <color name="colorDivider">#BDBDBD</color>
     <color name="colorOK">#00CC00</color>
     <color name="colorNoOK">#CC0000</color>
+    <color name="colorPassive">#848484</color>
 </resources>
