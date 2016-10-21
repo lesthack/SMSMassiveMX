@@ -10,4 +10,8 @@
     <color name="colorOK">#00CC00</color>
     <color name="colorNoOK">#CC0000</color>
     <color name="colorPassive">#848484</color>
+    <color name="colorLog">#000000</color>
+    <color name="colorLogError">#CC0000</color>
+    <color name="colorLogWarn">#FF8000</color>
+    <color name="colorLogSent">#0000FF</color>
 </resources>

@@ -52,7 +52,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
 
-        db.execSQL("CREATE TABLE log(id INTEGER PRIMARY KEY AUTOINCREMENT, log_date DATE, log_text TEXT);");
+        db.execSQL("CREATE TABLE log(id INTEGER PRIMARY KEY AUTOINCREMENT, log_date DATE, log_text TEXT, log_type INTEGER);");
     }
 
     @Override
@@ -70,8 +70,12 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     }
 
     public void addLog(String log){
+        addLog(log, 0);
+    }
+
+    public void addLog(String log, int type){
         try{
-            db_writer.execSQL("INSERT INTO log(log_date, log_text) VALUES(DateTime('now'), ?);", new String[]{log});
+            db_writer.execSQL("INSERT INTO log(log_date, log_text, log_type) VALUES(DateTime('now'), ?, ?);", new Object[]{log, type});
         }
         catch(Exception e){
             Log.w("DataBaseOpenHelper", e.getMessage());
@@ -79,11 +83,11 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     }
 
     public List getLogs(int last_n){
-        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text FROM log ORDER BY log_date DESC LIMIT ? OFFSET 0", new String[]{String.valueOf(last_n)});
+        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text, log_type FROM log ORDER BY log_date DESC LIMIT ? OFFSET 0", new String[]{String.valueOf(last_n)});
         List<Object> list_logs = new ArrayList<Object>();
         if (cursor.moveToFirst()) {
             do {
-                String[] log = new String[]{String.valueOf(cursor.getInt(0)), cursor.getString(1), cursor.getString(2)};
+                String[] log = new String[]{String.valueOf(cursor.getInt(0)), cursor.getString(1), cursor.getString(2), cursor.getString(3)};
                 list_logs.add(log);
             } while (cursor.moveToNext());
         }

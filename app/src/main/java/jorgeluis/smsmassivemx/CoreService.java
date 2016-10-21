@@ -84,12 +84,7 @@ public class CoreService extends Service {
         SMS_BY_DISPATCH = Integer.parseInt(localdb.getParameter("sms_by_dispatch"))*1000;
         WEBHOOK = localdb.getParameter("webhook");
 
-        addLog("CoreService created: " + id_service);
-    }
-
-    private void addLog(String log_text){
-        Log.i("CoreService", log_text);
-        localdb.addLog(log_text);
+        addLog("CoreService created: " + id_service, 3);
     }
 
     @Override
@@ -97,7 +92,7 @@ public class CoreService extends Service {
         // TODO Auto-generated method stub
         super.onStart(intent, startId);
 
-        addLog("CoreService started: " + id_service);
+        addLog("CoreService started: " + id_service, 3);
 
         if(WEBSERVER_ACTIVE){
             try {
@@ -120,7 +115,7 @@ public class CoreService extends Service {
                             JSONObject item = list_sms.getJSONObject(i);
                             try{
                                 //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
-                                addLog("Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"));
+                                addLog("Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
                             }
                             catch(Exception e){
@@ -234,7 +229,7 @@ public class CoreService extends Service {
     public void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-        Log.i("CoreService", "CoreService destroyed: " + id_service);
+        addLog("CoreService destroyed: " + id_service, 3);
         // Close database connection
         localdb.close();
         // Turn Off Webserver
@@ -289,8 +284,17 @@ public class CoreService extends Service {
     }
 
     public void dispatch_webhook(JSONObject parameters){
-        addLog(parameters.toString());
+        addLog(parameters.toString(), 2);
         /*if(WEBHOOK.length()>0){}*/
+    }
+
+    private void addLog(String log_text){
+        addLog(log_text, 0);
+    }
+
+    private void addLog(String log_text, int log_type){
+        Log.i("CoreService", log_text);
+        localdb.addLog(log_text, log_type);
     }
 
 }

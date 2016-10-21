@@ -3,6 +3,7 @@ package jorgeluis.smsmassivemx;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +41,13 @@ public class ItemLogAdapter extends ArrayAdapter<ItemLog> {
 
         TextItemDate.setText(item.getItemDate());
         TextItemText.setText(item.getItemText());
+
+        switch(item.getItemType()){
+            case 1: TextItemText.setTextColor(ContextCompat.getColor(getContext(), R.color.colorLogSent)); break;
+            case 2: TextItemText.setTextColor(ContextCompat.getColor(getContext(), R.color.colorLogError)); break;
+            case 3: TextItemText.setTextColor(ContextCompat.getColor(getContext(), R.color.colorLogWarn)); break;
+            default: TextItemText.setTextColor(ContextCompat.getColor(getContext(), R.color.colorLog)); break;
+        }
 
         return convertView;
     }

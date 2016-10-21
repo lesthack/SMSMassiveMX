@@ -86,10 +86,11 @@ public class MainActivity extends AppCompatActivity
         for(int i=0; i<list_logs.size(); i++){
             String[] log = (String[]) list_logs.get(i);
             int log_id = Integer.valueOf(log[0]);
+            int log_type = Integer.valueOf(log[3]);
             if(i==0){
                 max_log_id = log_id;
             }
-            items_log.add(new ItemLog(log_id, log[1], log[2]));
+            items_log.add(new ItemLog(log_id, log[1], log[2], log_type));
         }
 
         mItemLogAdapter = new ItemLogAdapter(getBaseContext(), items_log);

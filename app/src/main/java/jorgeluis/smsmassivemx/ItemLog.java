@@ -8,11 +8,13 @@ public class ItemLog {
     private int id;
     private String date;
     private String text;
+    private int type;
 
-    public ItemLog(int id, String date, String text){
+    public ItemLog(int id, String date, String text, int type){
         this.id = id;
         this.date = date;
         this.text = text;
+        this.type = type;
     }
 
     public String getItemDate(){
@@ -23,4 +25,7 @@ public class ItemLog {
         return this.text;
     }
 
+    public int getItemType(){
+        return this.type;
+    }
 }
