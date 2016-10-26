@@ -7,6 +7,7 @@ package jorgeluis.smsmassivemx;
 import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.Intent;
+import android.net.LocalServerSocket;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -34,13 +35,10 @@ import android.util.Log;
 @TargetApi(Build.VERSION_CODES.GINGERBREAD)
 public class CoreService extends Service {
 
+    private final IBinder mBinder = new LocalBinder();
     static final boolean WEBSERVER_ACTIVE = false;
     private final int SMS_LENGTH_MAX = 140;
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    private HttpService webserver = new HttpService(8080);
 
     private String HOST_WS;
     private String WEBHOOK;
@@ -49,15 +47,16 @@ public class CoreService extends Service {
     private Integer TIME_SLEEP_DISPATCH;
     private Integer SMS_BY_DISPATCH;
     private DataBaseOpenHelper localdb;
-    private HttpService webserver = new HttpService(8080);
-    private boolean free = true;
     private SmsManager sm;
     private Thread listener_sms;
     private Thread listener_dispatch;
+    private boolean free = true;
     private int id_service;
 
     private DateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
     private DateFormat hour_format = new SimpleDateFormat("HH:mm");
+
+
 
     @Override
     public void onCreate(){
@@ -295,6 +294,18 @@ public class CoreService extends Service {
     private void addLog(String log_text, int log_type){
         Log.i("CoreService", log_text);
         localdb.addLog(log_text, log_type);
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    public class LocalBinder extends Binder{
+        CoreService getService(){
+            return CoreService.this;
+        }
     }
 
 }

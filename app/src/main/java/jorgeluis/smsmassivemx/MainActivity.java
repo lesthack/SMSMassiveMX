@@ -4,7 +4,9 @@ import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.support.design.widget.NavigationView;
@@ -24,15 +26,15 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-
     private DataBaseOpenHelper localdb;
-    private ListView listview_log;
-    private ListView listview_status;
-    private ItemStatusAdapter mItemStatusAdapter;
-    private ItemLogAdapter mItemLogAdapter;
-    private int max_log_id;
+
+    ListView listview_status;
+    ItemStatusAdapter mItemStatusAdapter;
+    updateLogAsyncTask mLogAsyncTask = new updateLogAsyncTask();
 
     private Intent service_intent;
+    private Thread listener_log;
+    private boolean is_active = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,29 +78,20 @@ public class MainActivity extends AppCompatActivity
         mItemStatusAdapter = new ItemStatusAdapter(getBaseContext(), items_status);
         listview_status.setAdapter(mItemStatusAdapter);
 
-        listview_log = (ListView) findViewById(R.id.list_log);
-        List<ItemLog> items_log = new ArrayList<ItemLog>();
-            /*
-            items_log.add(new ItemLog(1, "2016-10-20 00:41", "El servicio se ha activado satisfactoriamente"));
-            items_log.add(new ItemLog(2, "2016-10-20 00:42", "Ejemplo de Item Agregado"));
-            */
-        List list_logs = localdb.getLogs(50);
-        for(int i=0; i<list_logs.size(); i++){
-            String[] log = (String[]) list_logs.get(i);
-            int log_id = Integer.valueOf(log[0]);
-            int log_type = Integer.valueOf(log[3]);
-            if(i==0){
-                max_log_id = log_id;
-            }
-            items_log.add(new ItemLog(log_id, log[1], log[2], log_type));
-        }
+        startAsyncTaskLog();
+    }
 
-        mItemLogAdapter = new ItemLogAdapter(getBaseContext(), items_log);
-        listview_log.setAdapter(mItemLogAdapter);
+    private void startAsyncTaskLog(){
+        is_active = true;
+        Log.i("Main", "Inicio del Thread Log");
+        mLogAsyncTask.execute();
     }
 
     @Override
     public void onBackPressed() {
+        is_active = false;
+        Log.i("Main", "Fin del Thread log");
+
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -165,6 +158,81 @@ public class MainActivity extends AppCompatActivity
     private boolean isRootedDevice(){
         RootUtil root_util = new RootUtil();
         return root_util.isDeviceRooted();
+    }
+
+    // Vamonos por el camino de crear un Async
+    private class updateLogAsyncTask extends AsyncTask<Void, Integer, Void> {
+
+        ListView back_listview_log;
+        List<ItemLog> back_items_log;
+        ItemLogAdapter back_ItemLogAdapter;
+        int back_max_log_id = -1;
+
+        protected void onPreExecute(){
+            back_listview_log = (ListView) findViewById(R.id.list_log);
+            back_listview_log.setClickable(false);
+            back_items_log = new ArrayList<ItemLog>();
+
+            List list_logs = localdb.getLogs(50);
+            for(int i=0; i<list_logs.size(); i++){
+                String[] log = (String[]) list_logs.get(i);
+                int log_id = Integer.valueOf(log[0]);
+                int log_type = Integer.valueOf(log[3]);
+                if(i==0){
+                    back_max_log_id = log_id;
+                }
+                back_items_log.add(new ItemLog(log_id, log[1], log[2], log_type));
+            }
+
+            back_ItemLogAdapter = new ItemLogAdapter(getBaseContext(), back_items_log);
+            back_listview_log.setAdapter(back_ItemLogAdapter);
+        }
+
+        protected Void doInBackground(Void... params) {
+            while(is_active) {
+                try {
+                    List list_logs = localdb.getLogsAfterMax(back_max_log_id);
+                    for (int i = 0; i < list_logs.size(); i++) {
+                        String[] log = (String[]) list_logs.get(i);
+                        int log_id = Integer.valueOf(log[0]);
+                        int log_type = Integer.valueOf(log[3]);
+                        back_max_log_id = log_id;
+                        back_items_log.add(0, new ItemLog(log_id, log[1], log[2], log_type));
+                    }
+                    if(list_logs.size()>0){
+                        publishProgress(0);
+                    }
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+        protected void onPostExecute(Void... voids){
+            Log.i("Main","Me fui");
+        }
+
+        protected void onProgressUpdate(Integer... progress) {
+            back_ItemLogAdapter.notifyDataSetChanged();
+            back_listview_log.requestLayout();
+        }
+
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        Log.i("Main", "Pause");
+        //mLogAsyncTask.cancel(true);
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        Log.i("Main", "Resume: " + is_active);
+        //startAsyncTaskLog();
     }
 
 }

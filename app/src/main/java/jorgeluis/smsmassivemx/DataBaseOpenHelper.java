@@ -13,8 +13,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by lesthack on 19/08/16.
@@ -47,7 +50,8 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value) values('time_dispatch','60');");
         db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','1');");
         db.execSQL("INSERT INTO parameter(name, value) values('sms_by_dispatch','30');");
-        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
+        //db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
+        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php');");
         db.execSQL("INSERT INTO parameter(name, value) values('webhook','');");
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
@@ -58,6 +62,12 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // TODO Auto-generated method stub
+    }
+
+    private String getDateTime(){
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        Date date = new Date();
+        return dateFormat.format(date);
     }
 
     private boolean insertSMS(String campaign, String launch_date, String phone, String message, SQLiteDatabase db_medium){
@@ -75,15 +85,30 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
     public void addLog(String log, int type){
         try{
-            db_writer.execSQL("INSERT INTO log(log_date, log_text, log_type) VALUES(DateTime('now'), ?, ?);", new Object[]{log, type});
+            db_writer.execSQL("INSERT INTO log(log_date, log_text, log_type) VALUES(?, ?, ?);", new Object[]{getDateTime(), log, type});
         }
         catch(Exception e){
             Log.w("DataBaseOpenHelper", e.getMessage());
         }
     }
 
+    public List getLogsAfterMax(int max_id){
+        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text, log_type FROM log WHERE id > " + max_id + " ORDER BY log_date ASC, id ASC", null);
+        List<Object> list_logs = new ArrayList<Object>();
+        if (cursor.moveToFirst()) {
+            do {
+                String[] log = new String[]{String.valueOf(cursor.getInt(0)), cursor.getString(1), cursor.getString(2), cursor.getString(3)};
+                list_logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+        return list_logs;
+    }
+
     public List getLogs(int last_n){
-        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text, log_type FROM log ORDER BY log_date DESC LIMIT ? OFFSET 0", new String[]{String.valueOf(last_n)});
+        Cursor cursor = db_reader.rawQuery("SELECT id, log_date, log_text, log_type FROM log ORDER BY log_date DESC, id DESC LIMIT ? OFFSET 0", new String[]{String.valueOf(last_n)});
         List<Object> list_logs = new ArrayList<Object>();
         if (cursor.moveToFirst()) {
             do {
