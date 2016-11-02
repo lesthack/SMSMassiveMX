@@ -134,7 +134,8 @@ public class MainActivity extends AppCompatActivity
             Intent i = new Intent(this, SettingsActivity.class);
             startActivity(i);
         } else if (id == R.id.nav_about) {
-            Log.i("MainActivity", "Tap on contact");
+            Intent i = new Intent(MainActivity.this, AboutActivity.class);
+            MainActivity.this.startActivity(i);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
