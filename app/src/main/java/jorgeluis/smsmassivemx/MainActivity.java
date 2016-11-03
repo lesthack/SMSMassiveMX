@@ -60,9 +60,14 @@ public class MainActivity extends AppCompatActivity
 
         // Starting service
         if(!isThisServiceRunning(CoreService.class)) {
-            service_intent = new Intent(this, CoreService.class);
-            startService(service_intent);
-            is_services_started = true;
+            //if(localdb.getValidParameter("host_ws")){
+                service_intent = new Intent(this, CoreService.class);
+                startService(service_intent);
+                is_services_started = true;
+            //}
+            //else{
+            //    addLog("Valor Host no configurado");
+            //}
         }
         else{
             is_services_started = true;
@@ -236,4 +241,12 @@ public class MainActivity extends AppCompatActivity
         //startAsyncTaskLog();
     }
 
+    private void addLog(String log_text){
+        addLog(log_text, 0);
+    }
+
+    private void addLog(String log_text, int log_type){
+        Log.i("Main", log_text);
+        localdb.addLog(log_text, log_type);
+    }
 }

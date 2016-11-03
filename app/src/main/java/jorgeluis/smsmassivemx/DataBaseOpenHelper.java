@@ -44,15 +44,16 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
         Log.i("DataBaseOpenHelper", "Creating Database");
 
-        db.execSQL("CREATE TABLE parameter(name TEXT, value TEXT);");
-        db.execSQL("INSERT INTO parameter(name, value) values('version','0.1');");
-        db.execSQL("INSERT INTO parameter(name, value) values('time_scan_host','60');");
-        db.execSQL("INSERT INTO parameter(name, value) values('time_dispatch','60');");
-        db.execSQL("INSERT INTO parameter(name, value) values('time_sleep_dispatch','1');");
-        db.execSQL("INSERT INTO parameter(name, value) values('sms_by_dispatch','30');");
+        db.execSQL("CREATE TABLE parameter(name TEXT, value TEXT, valid BOOLEAN);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('version','0.1', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('time_scan_host','60', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('time_dispatch','60', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('time_sleep_dispatch','1', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('sms_by_dispatch','30', 1);");
         //db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
-        db.execSQL("INSERT INTO parameter(name, value) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php');");
-        db.execSQL("INSERT INTO parameter(name, value) values('webhook','');");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','', 0);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
 
@@ -238,6 +239,15 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         return cursor.getString(0);
     }
 
+    public Boolean getValidParameter(String name){
+        Cursor cursor = db_reader.rawQuery("SELECT valid FROM parameter WHERE name=? LIMIT 1 OFFSET 0", new String[]{name});
+        cursor.moveToFirst();
+        if(cursor.getCount()<1){
+            return false;
+        }
+        return cursor.getString(0)=="1"?true:false;
+    }
+
     public boolean setParameter(String name, String value){
         String query;
 
@@ -247,6 +257,24 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
             }
             else{
                 db_writer.execSQL("UPDATE parameter SET value=? WHERE name=?", new String[]{value, name});
+            }
+            return true;
+        }
+        catch(Exception e){
+            Log.w("DataBaseOpenHelper", e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean setParameter(String name, String value, Boolean valid){
+        String query;
+
+        try{
+            if(getParameter(name) == null){
+                db_writer.execSQL("INSERT INTO parameter(name, value, valid) VALUES(?, ?, ?);", new String[]{name, value, String.valueOf(valid)});
+            }
+            else{
+                db_writer.execSQL("UPDATE parameter SET value=? and valid=? WHERE name=?", new String[]{value, name, String.valueOf(valid)});
             }
             return true;
         }

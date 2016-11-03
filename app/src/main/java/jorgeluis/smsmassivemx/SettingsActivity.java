@@ -6,6 +6,18 @@ import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
+import android.support.v7.app.AlertDialog;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 
 class SettingsActivity extends PreferenceActivity {
@@ -59,8 +71,11 @@ class SettingsActivity extends PreferenceActivity {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    localdb.setParameter("host_ws", newValue.toString());
-                    host.setText(newValue.toString());
+                    if(host.getText() != newValue.toString()){
+                        localdb.setParameter("host_ws", newValue.toString());
+                        host.setText(newValue.toString());
+                        //validHost(host.getText(), "Host");
+                    }
                     return false;
                 }
             });
@@ -114,6 +129,58 @@ class SettingsActivity extends PreferenceActivity {
                     return false;
                 }
             });
+        }
+
+        private Boolean validHost(String host, String type){
+            JSONArray json_content;
+            try {
+                //addLog("Validando " + type + " " + host);
+                StringBuilder text_content = getContent(host);
+                Log.i("Settings", host);
+                json_content = new JSONArray(text_content.toString());
+                addLog(type + " " + host + "correcto");
+                return true;
+            } catch (JSONException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            addLog("El " + type + " " + host + " no es válido.");
+            return false;
+        }
+
+        private StringBuilder getContent(String URI){
+            String line;
+            StringBuilder builder = new StringBuilder();
+            try {
+                URL url = new URL(URI);
+                URLConnection urlc = url.openConnection();
+                BufferedReader bfr = new BufferedReader(new InputStreamReader(urlc.getInputStream()));
+
+                while((line = bfr.readLine())!=null){
+                    builder.append(line);
+                }
+            } catch (MalformedURLException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch(Exception e){
+                Log.e("CoreService", e.toString());
+                e.printStackTrace();
+            }
+
+            return builder;
+        }
+
+        private void addLog(String log_text){
+            addLog(log_text, 0);
+        }
+
+        private void addLog(String log_text, int log_type){
+            Log.i("StartUpReceiver", log_text);
+            localdb.addLog(log_text, log_type);
         }
     }
 
