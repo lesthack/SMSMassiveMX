@@ -53,7 +53,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         //db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
         //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','', 0);");
-        db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://10.10.1.97:7000', 1);");
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
 
@@ -65,7 +65,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         // TODO Auto-generated method stub
     }
 
-    private String getDateTime(){
+    public String getDateTime(){
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         Date date = new Date();
         return dateFormat.format(date);

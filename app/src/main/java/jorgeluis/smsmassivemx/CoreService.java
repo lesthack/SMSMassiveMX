@@ -8,6 +8,8 @@ import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.Intent;
 import android.net.LocalServerSocket;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -17,9 +19,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedWriter;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 import java.io.BufferedReader;
@@ -31,6 +43,9 @@ import java.net.URLConnection;
 
 import android.telephony.SmsManager;
 import android.util.Log;
+import android.util.Pair;
+
+import javax.net.ssl.HttpsURLConnection;
 
 @TargetApi(Build.VERSION_CODES.GINGERBREAD)
 public class CoreService extends Service {
@@ -55,8 +70,6 @@ public class CoreService extends Service {
 
     private DateFormat date_format = new SimpleDateFormat("yyyy-MM-dd");
     private DateFormat hour_format = new SimpleDateFormat("HH:mm");
-
-
 
     @Override
     public void onCreate(){
@@ -109,29 +122,54 @@ public class CoreService extends Service {
                         String launch_date = String.format("%s %s", new String[]{date_format.format(new Date()), hour_format.format(new Date())});
                         free = false;
                         JSONArray list_sms = localdb.getSMSListUnSent(launch_date, SMS_BY_DISPATCH);
+                        JSONArray list_sms_sent = new JSONArray();
                         // Send sms
                         for(int i=0; i<list_sms.length(); i++){
                             JSONObject item = list_sms.getJSONObject(i);
                             try{
                                 //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
-                                addLog("Message (id: " + item.getInt("id") + ") sent (Campaign: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
+                                addLog("Mensaje (id: " + item.getInt("id") + ") enviado (Campaña: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
+                                JSONObject item_json = new JSONObject();
+                                    item_json.put("campaign_id", item.get("campaign"));
+                                    item_json.put("phone", item.get("phone"));
+                                list_sms_sent.put(item_json);
                             }
                             catch(Exception e){
-                                addLog("Error to try send message: " + e.getMessage());
+                                addLog("Error al enviar el mensaje: " + e.getMessage());
                                 localdb.markErrorSMS(item.getInt("id"));
-                                JSONObject exception_parameters = new JSONObject();
+                                JSONObject payload = new JSONObject();
+                                JSONObject parameters = new JSONObject();
                                 try{
-                                    exception_parameters.put("type", "error");
-                                    exception_parameters.put("code", 332);
-                                    exception_parameters.put("description", e.getMessage());
+                                    payload.put("type", "error");
+                                    payload.put("code", 202);
+                                    payload.put("description", e.getMessage());
+
+                                    parameters.put("campaign_id", item.getInt("id"));
+                                    parameters.put("date", localdb.getDateTime());
+                                    parameters.put("phone", item.getString("phone"));
+
+                                    payload.put("parameters", parameters);
                                 }
                                 catch(Exception f){
                                     f.printStackTrace();
                                 }
-                                dispatch_webhook(exception_parameters);
+                                dispatch_webhook(payload);
                             }
                             Thread.sleep(TIME_SLEEP_DISPATCH);
+                        }
+                        if(list_sms_sent.length()>0){
+                            JSONObject payload = new JSONObject();
+                            try{
+                                payload.put("type", "ok");
+                                payload.put("code", 101);
+                                payload.put("description", "SMS's enviados satisfactoriamente.");
+                                payload.put("list", list_sms_sent);
+                            }
+                            catch(Exception f){
+                                f.printStackTrace();
+                            }
+                            dispatch_webhook(payload);
                         }
                         Thread.sleep(TIME_DISPATCH);
                     } catch (InterruptedException e) {
@@ -168,14 +206,15 @@ public class CoreService extends Service {
                                         //Check 160 digits
                                         for(int j = 0; j<campaign_sms.length(); j++){
                                             if(campaign_sms.getString(j).length()>SMS_LENGTH_MAX){
-                                                throw new CampaignsException(222, campaign_id, String.format("The sms \"%s\" is longer than %d characters", campaign_sms.getString(j), SMS_LENGTH_MAX));
+                                                throw new CampaignsException(201, campaign_id, String.format("El mensaje \"%s\" excede los %d caracteres.", campaign_sms.getString(j), SMS_LENGTH_MAX));
                                             }
                                         }
 
                                         // Adding campaigns
                                         int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
                                         if(sms_inserted>0){
-                                            addLog("Adding " + sms_inserted + " SMS's of Campaign " + campaign_id);
+                                            addLog("Agergando " + sms_inserted + " SMS's de la Campaña " + campaign_id);
+                                            /*
                                             JSONObject exception_parameters = new JSONObject();
                                             try{
                                                 exception_parameters.put("type", "ok");
@@ -186,11 +225,12 @@ public class CoreService extends Service {
                                                 f.printStackTrace();
                                             }
                                             dispatch_webhook(exception_parameters);
+                                            */
                                         }
 
                                     }
                                     else{
-                                        throw new CampaignsException(221, "Id Campaign not found");
+                                        throw new CampaignsException(200, "Campaña sin ID");
                                     }
                                 } catch (CampaignsException e) {
                                     dispatch_webhook(e.getParameters());
@@ -198,7 +238,7 @@ public class CoreService extends Service {
                                     JSONObject exception_parameters = new JSONObject();
                                     try{
                                         exception_parameters.put("type", "error");
-                                        exception_parameters.put("code", 331);
+                                        exception_parameters.put("code", 300);
                                         exception_parameters.put("description", e.getMessage());
                                     }
                                     catch(Exception f){
@@ -222,6 +262,7 @@ public class CoreService extends Service {
 
         listener_sms.start();
         listener_dispatch.start();
+        //testPayLoad();
     }
 
     @Override
@@ -282,9 +323,38 @@ public class CoreService extends Service {
         return imei;
     }
 
-    public void dispatch_webhook(JSONObject parameters){
-        addLog(parameters.toString(), 2);
-        /*if(WEBHOOK.length()>0){}*/
+    public void dispatch_webhook(JSONObject payload) {
+        // Execute AsyncTask for send payload to webhook
+        if(WEBHOOK.length() > 0){
+            try {
+                URL url = new URL(WEBHOOK);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type","application/json");
+                conn.setDoOutput(true);
+                //conn.setDoInput(true);
+
+                Uri.Builder builder = new Uri.Builder()
+                        .appendQueryParameter("payload", payload.toString());
+                String query = builder.build().getEncodedQuery();
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                wr.write(query);
+                wr.flush();
+                wr.close();
+                os.close();
+
+                conn.connect();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.i("Core", e.getMessage());
+            }
+        }
+        addLog(payload.toString(), 2);
     }
 
     private void addLog(String log_text){
@@ -308,4 +378,22 @@ public class CoreService extends Service {
         }
     }
 
+    private void testPayLoad(){
+        JSONObject payload = new JSONObject();
+        try{
+            payload.put("type", "ok");
+            payload.put("code", 101);
+            payload.put("description", "SMS's enviados satisfactoriamente.");
+
+            JSONArray list_sms_sent = new JSONArray();
+            list_sms_sent.put("Algo");
+            list_sms_sent.put("MAS");
+
+            payload.put("list", list_sms_sent);
+        }
+        catch(Exception f){
+            f.printStackTrace();
+        }
+        dispatch_webhook(payload);
+    }
 }
