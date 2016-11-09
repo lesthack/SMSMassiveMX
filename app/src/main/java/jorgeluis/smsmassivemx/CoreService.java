@@ -123,40 +123,40 @@ public class CoreService extends Service {
                         free = false;
                         JSONArray list_sms = localdb.getSMSListUnSent(launch_date, SMS_BY_DISPATCH);
                         JSONArray list_sms_sent = new JSONArray();
+                        JSONArray list_sms_nosent = new JSONArray();
                         // Send sms
                         for(int i=0; i<list_sms.length(); i++){
                             JSONObject item = list_sms.getJSONObject(i);
+                            JSONObject item_json = new JSONObject();
+                                item_json.put("campaign_id", item.get("campaign"));
+                                item_json.put("phone", item.get("phone"));
+                                item_json.put("date", localdb.getDateTime());
                             try{
-                                //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
+                                sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
                                 addLog("Mensaje (id: " + item.getInt("id") + ") enviado (Campaña: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
-                                JSONObject item_json = new JSONObject();
-                                    item_json.put("campaign_id", item.get("campaign"));
-                                    item_json.put("phone", item.get("phone"));
                                 list_sms_sent.put(item_json);
                             }
                             catch(Exception e){
                                 addLog("Error al enviar el mensaje: " + e.getMessage());
                                 localdb.markErrorSMS(item.getInt("id"));
-                                JSONObject payload = new JSONObject();
-                                JSONObject parameters = new JSONObject();
-                                try{
-                                    payload.put("type", "error");
-                                    payload.put("code", 202);
-                                    payload.put("description", e.getMessage());
-
-                                    parameters.put("campaign_id", item.getInt("id"));
-                                    parameters.put("date", localdb.getDateTime());
-                                    parameters.put("phone", item.getString("phone"));
-
-                                    payload.put("parameters", parameters);
-                                }
-                                catch(Exception f){
-                                    f.printStackTrace();
-                                }
-                                dispatch_webhook(payload);
+                                item_json.put("error", e.getMessage());
+                                list_sms_nosent.put(item_json);
                             }
                             Thread.sleep(TIME_SLEEP_DISPATCH);
+                        }
+                        if(list_sms_nosent.length()>0){
+                            JSONObject payload = new JSONObject();
+                            try{
+                                payload.put("type", "error");
+                                payload.put("code", 202);
+                                payload.put("description", "SMS's no enviados");
+                                payload.put("list", list_sms_nosent);
+                            }
+                            catch(Exception f){
+                                f.printStackTrace();
+                            }
+                            dispatch_webhook(payload);
                         }
                         if(list_sms_sent.length()>0){
                             JSONObject payload = new JSONObject();
@@ -249,7 +249,6 @@ public class CoreService extends Service {
                             }
 
                         }
-
                         Thread.sleep(TIME_SCAN_HOST);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -325,6 +324,8 @@ public class CoreService extends Service {
 
     public void dispatch_webhook(JSONObject payload) {
         // Execute AsyncTask for send payload to webhook
+        JSONArray payloads = new JSONArray();
+        payloads.put(payload);
         if(WEBHOOK.length() > 0){
             try {
                 URL url = new URL(WEBHOOK);
@@ -337,7 +338,7 @@ public class CoreService extends Service {
                 //conn.setDoInput(true);
 
                 Uri.Builder builder = new Uri.Builder()
-                        .appendQueryParameter("payload", payload.toString());
+                        .appendQueryParameter("payload", payloads.toString());
                 String query = builder.build().getEncodedQuery();
 
                 OutputStream os = conn.getOutputStream();
