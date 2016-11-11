@@ -25,9 +25,12 @@ import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -322,6 +325,26 @@ public class CoreService extends Service {
         return imei;
     }
 
+    private String getQuery(List<AbstractMap.SimpleEntry> params) throws UnsupportedEncodingException
+    {
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+
+        for (AbstractMap.SimpleEntry pair : params)
+        {
+            if (first)
+                first = false;
+            else
+                result.append("&");
+
+            result.append(URLEncoder.encode(pair.getKey().toString(), "UTF-8"));
+            result.append("=");
+            result.append(URLEncoder.encode(pair.getValue().toString(), "UTF-8"));
+        }
+
+        return result.toString();
+    }
+
     public void dispatch_webhook(JSONObject payload) {
         // Execute AsyncTask for send payload to webhook
         JSONArray payloads = new JSONArray();
@@ -333,10 +356,35 @@ public class CoreService extends Service {
                 conn.setReadTimeout(10000);
                 conn.setConnectTimeout(15000);
                 conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type","application/json");
+                //conn.setRequestProperty("Content-Type","application/json");
                 conn.setDoOutput(true);
-                //conn.setDoInput(true);
+                conn.setDoInput(true);
 
+                List<AbstractMap.SimpleEntry> params = new ArrayList<AbstractMap.SimpleEntry>();
+                params.add(new AbstractMap.SimpleEntry("payload", payloads.toString()));
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(os, "UTF-8"));
+                writer.write(getQuery(params));
+                writer.flush();
+                writer.close();
+                os.close();
+
+                //conn.connect();
+                String response = "";
+                if (conn.getResponseCode() == HttpsURLConnection.HTTP_OK) {
+                    String line;
+                    BufferedReader br=new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    while ((line=br.readLine()) != null) {
+                        response+=line;
+                    }
+                }
+                else {
+                    response="";
+                }
+                Log.i("CoreService", "Reponse: " + response);
+                /*
                 Uri.Builder builder = new Uri.Builder()
                         .appendQueryParameter("payload", payloads.toString());
                 String query = builder.build().getEncodedQuery();
@@ -349,7 +397,7 @@ public class CoreService extends Service {
                 os.close();
 
                 conn.connect();
-
+                */
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.i("Core", e.getMessage());
@@ -384,13 +432,7 @@ public class CoreService extends Service {
         try{
             payload.put("type", "ok");
             payload.put("code", 101);
-            payload.put("description", "SMS's enviados satisfactoriamente.");
-
-            JSONArray list_sms_sent = new JSONArray();
-            list_sms_sent.put("Algo");
-            list_sms_sent.put("MAS");
-
-            payload.put("list", list_sms_sent);
+            payload.put("description", "Prueba de envio desde la app SMS Massive MX.");
         }
         catch(Exception f){
             f.printStackTrace();
