@@ -135,7 +135,9 @@ public class CoreService extends Service {
                                 item_json.put("phone", item.get("phone"));
                                 item_json.put("date", localdb.getDateTime());
                             try{
-                                sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
+                                ArrayList<String> arrSMS = sm.divideMessage(item.getString("message"));
+                                sm.sendMultipartTextMessage(item.getString("phone"), null, arrSMS, null, null);
+                                //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
                                 addLog("Mensaje (id: " + item.getInt("id") + ") enviado (Campaña: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
                                 list_sms_sent.put(item_json);
