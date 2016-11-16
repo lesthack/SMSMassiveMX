@@ -1,5 +1,6 @@
 package jorgeluis.smsmassivemx;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -21,13 +22,15 @@ import java.net.URLConnection;
 import java.util.List;
 
 class SettingsActivity extends PreferenceActivity {
-
+    //private CoreService mService;
     /*
     @Override
      */
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
+        //mService = getIntent().getParcelableExtra("mService");
+        MyPreferenceFragment settings_fragment = new MyPreferenceFragment();
+        getFragmentManager().beginTransaction().add(android.R.id.content, settings_fragment).commit();
     }
 
     public static class MyPreferenceFragment extends PreferenceFragment
@@ -71,10 +74,10 @@ class SettingsActivity extends PreferenceActivity {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    if(host.getText() != newValue.toString()){
+                    if(!host.getText().equals(newValue.toString())){
                         localdb.setParameter("host_ws", newValue.toString());
                         host.setText(newValue.toString());
-                        //validHost(host.getText(), "Host");
+                        localdb.addLog("Actualizando parámetro host_ws a " + host.getText());
                     }
                     return false;
                 }
@@ -84,8 +87,11 @@ class SettingsActivity extends PreferenceActivity {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    localdb.setParameter("webhook", newValue.toString());
-                    webhook.setText(newValue.toString());
+                    if(!webhook.getText().equals(newValue.toString())){
+                        localdb.setParameter("webhook", newValue.toString());
+                        webhook.setText(newValue.toString());
+                        localdb.addLog("Actualizando parámetro webhook a " + webhook.getText());
+                    }
                     return false;
                 }
             });
@@ -131,59 +137,7 @@ class SettingsActivity extends PreferenceActivity {
             });
         }
 
-        private Boolean validHost(String host, String type){
-            JSONArray json_content;
-            try {
-                //addLog("Validando " + type + " " + host);
-                StringBuilder text_content = getContent(host);
-                Log.i("Settings", host);
-                json_content = new JSONArray(text_content.toString());
-                addLog(type + " " + host + "correcto");
-                return true;
-            } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-            addLog("El " + type + " " + host + " no es válido.");
-            return false;
-        }
-
-        private StringBuilder getContent(String URI){
-            String line;
-            StringBuilder builder = new StringBuilder();
-            try {
-                URL url = new URL(URI);
-                URLConnection urlc = url.openConnection();
-                BufferedReader bfr = new BufferedReader(new InputStreamReader(urlc.getInputStream()));
-
-                while((line = bfr.readLine())!=null){
-                    builder.append(line);
-                }
-            } catch (MalformedURLException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch(Exception e){
-                Log.e("CoreService", e.toString());
-                e.printStackTrace();
-            }
-
-            return builder;
-        }
-
-        private void addLog(String log_text){
-            addLog(log_text, 0);
-        }
-
-        private void addLog(String log_text, int log_type){
-            Log.i("StartUpReceiver", log_text);
-            localdb.addLog(log_text, log_type);
-        }
     }
-
     /**
      * Populate the activity with the top-level headers.
      */

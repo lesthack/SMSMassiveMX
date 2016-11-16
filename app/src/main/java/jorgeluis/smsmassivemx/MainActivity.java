@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.util.Log;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity
     ListView listview_status;
     ItemStatusAdapter mItemStatusAdapter;
     updateLogAsyncTask mLogAsyncTask = new updateLogAsyncTask();
+    CoreService mService;
 
     private Intent service_intent;
     private Thread listener_log;
@@ -60,19 +62,19 @@ public class MainActivity extends AppCompatActivity
 
         // Starting service
         if(!isThisServiceRunning(CoreService.class)) {
-            //if(localdb.getValidParameter("host_ws")){
-                service_intent = new Intent(this, CoreService.class);
-                startService(service_intent);
-                is_services_started = true;
-            //}
-            //else{
-            //    addLog("Valor Host no configurado");
-            //}
+            service_intent = new Intent(this, CoreService.class);
+            startService(service_intent);
+            is_services_started = true;
         }
         else{
             is_services_started = true;
             Log.i("MainActivity", "CoreServices was active.");
         }
+
+        /*service_intent = new Intent(this, CoreService.class);
+        bindService(service_intent, mServerConn, Context.BIND_AUTO_CREATE);
+        startService(service_intent);
+        is_services_started = true;*/
 
         //Asignaciones
         listview_status = (ListView) findViewById(R.id.list_status);
@@ -114,15 +116,13 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            Intent i = new Intent(this, SettingsActivity.class);
-            startActivity(i);
+        if (id == R.id.action_update_parameters) {
+            /*Intent i = new Intent(this, SettingsActivity.class);
+            i.putExtra("mService", (Parcelable) mService);
+            startActivity(i);*/
+            mService.updParams();
             return true;
         }
 
@@ -249,4 +249,19 @@ public class MainActivity extends AppCompatActivity
         Log.i("Main", log_text);
         localdb.addLog(log_text, log_type);
     }
+
+    protected ServiceConnection mServerConn = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName classCame, IBinder service) {
+            Log.i("mServerConn", "onServiceConnected");
+            CoreService.LocalBinder binder = (CoreService.LocalBinder) service;
+            mService = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName className) {
+            Log.i("mServerConn", "onServiceDisconnected");
+        }
+    };
+
 }

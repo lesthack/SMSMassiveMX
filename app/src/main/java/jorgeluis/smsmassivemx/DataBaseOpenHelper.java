@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     private static String DB_PATH = Environment.getDataDirectory().getAbsolutePath() + "/data/jorgeluis.smsmassivemx/databases/";
     private SQLiteDatabase db_reader;
     private SQLiteDatabase db_writer;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
     public DataBaseOpenHelper(Context context) {
         super(context, DB_NAME, null, 3);
@@ -66,7 +68,6 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
     }
 
     public String getDateTime(){
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         Date date = new Date();
         return dateFormat.format(date);
     }
@@ -82,6 +83,19 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
     public void addLog(String log){
         addLog(log, 0);
+    }
+
+    public void cleanLog() {
+        Calendar c = Calendar.getInstance();
+        c.setTime(new Date());
+        c.add(Calendar.DAY_OF_YEAR, -1);
+        try{
+            db_writer.execSQL("DELETE FROM log WHERE log_date < ?", new String[]{dateFormat.format(c.getTime())});
+            Log.i("DataBaseOpenHelper","cleanLog");
+        }
+        catch(Exception e){
+            Log.w("DataBaseOpenHelper", e.getMessage());
+        }
     }
 
     public void addLog(String log, int type){
@@ -120,7 +134,6 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         if (cursor != null && !cursor.isClosed()) {
             cursor.close();
         }
-
         return list_logs;
     }
 

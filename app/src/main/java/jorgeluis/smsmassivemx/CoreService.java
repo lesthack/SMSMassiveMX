@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import java.io.BufferedWriter;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -90,7 +91,10 @@ public class CoreService extends Service {
 
         // Abriendo base de datos
         localdb = new DataBaseOpenHelper(this);
+        updParams();
+    }
 
+    public void updParams(){
         // Valores de parametros
         HOST_WS = localdb.getParameter("host_ws");
         TIME_SCAN_HOST = Integer.parseInt(localdb.getParameter("time_scan_host"))*1000;
@@ -98,8 +102,7 @@ public class CoreService extends Service {
         TIME_SLEEP_DISPATCH = (int) (Float.parseFloat(localdb.getParameter("time_sleep_dispatch"))*1000);
         SMS_BY_DISPATCH = Integer.parseInt(localdb.getParameter("sms_by_dispatch"))*1000;
         WEBHOOK = localdb.getParameter("webhook");
-
-        addLog("CoreService created: " + id_service, 3);
+        addLog("Parámetros Actualizados");
     }
 
     @Override
@@ -219,20 +222,7 @@ public class CoreService extends Service {
                                         int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
                                         if(sms_inserted>0){
                                             addLog("Agergando " + sms_inserted + " SMS's de la Campaña " + campaign_id);
-                                            /*
-                                            JSONObject exception_parameters = new JSONObject();
-                                            try{
-                                                exception_parameters.put("type", "ok");
-                                                exception_parameters.put("code", 100);
-                                                exception_parameters.put("description", String.format("Campaign \"%s\" added successfull and waiting for send %d SMS's.", campaign_id, sms_inserted));
-                                            }
-                                            catch(Exception f){
-                                                f.printStackTrace();
-                                            }
-                                            dispatch_webhook(exception_parameters);
-                                            */
                                         }
-
                                     }
                                     else{
                                         throw new CampaignsException(200, "Campaña sin ID");
@@ -252,21 +242,19 @@ public class CoreService extends Service {
                                     dispatch_webhook(exception_parameters);
                                 }
                             }
-
                         }
+                        localdb.cleanLog();
                         Thread.sleep(TIME_SCAN_HOST);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     free = true;
                 }
-
             }
         };
 
         listener_sms.start();
         listener_dispatch.start();
-        //testPayLoad();
     }
 
     @Override
@@ -304,9 +292,13 @@ public class CoreService extends Service {
             URLConnection urlc = url.openConnection();
             BufferedReader bfr = new BufferedReader(new InputStreamReader(urlc.getInputStream()));
 
-            while((line = bfr.readLine())!=null){
+            while ((line = bfr.readLine()) != null) {
                 builder.append(line);
             }
+        }
+        catch (FileNotFoundException e){
+            addLog("Ruta " + URI + " no encontrada.", 2);
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -358,7 +350,6 @@ public class CoreService extends Service {
                 conn.setReadTimeout(10000);
                 conn.setConnectTimeout(15000);
                 conn.setRequestMethod("POST");
-                //conn.setRequestProperty("Content-Type","application/json");
                 conn.setDoOutput(true);
                 conn.setDoInput(true);
 
@@ -373,33 +364,20 @@ public class CoreService extends Service {
                 writer.close();
                 os.close();
 
-                //conn.connect();
                 String response = "";
                 if (conn.getResponseCode() == HttpsURLConnection.HTTP_OK) {
                     String line;
-                    BufferedReader br=new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    while ((line=br.readLine()) != null) {
-                        response+=line;
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    while ((line = br.readLine()) != null) {
+                        response += line;
                     }
-                }
-                else {
-                    response="";
+                } else {
+                    response = "";
                 }
                 Log.i("CoreService", "Reponse: " + response);
-                /*
-                Uri.Builder builder = new Uri.Builder()
-                        .appendQueryParameter("payload", payloads.toString());
-                String query = builder.build().getEncodedQuery();
-
-                OutputStream os = conn.getOutputStream();
-                BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-                wr.write(query);
-                wr.flush();
-                wr.close();
-                os.close();
-
-                conn.connect();
-                */
+            } catch (FileNotFoundException e){
+                addLog("Ruta " + WEBHOOK + " no encontrada.", 2);
+                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.i("Core", e.getMessage());
@@ -417,16 +395,16 @@ public class CoreService extends Service {
         localdb.addLog(log_text, log_type);
     }
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
     public class LocalBinder extends Binder{
         CoreService getService(){
             return CoreService.this;
         }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
     }
 
     private void testPayLoad(){
