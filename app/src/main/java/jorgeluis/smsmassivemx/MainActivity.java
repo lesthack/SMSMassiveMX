@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity
             /*Intent i = new Intent(this, SettingsActivity.class);
             i.putExtra("mService", (Parcelable) mService);
             startActivity(i);*/
-            mService.updParams();
+            //mService.updParams();
             return true;
         }
 
