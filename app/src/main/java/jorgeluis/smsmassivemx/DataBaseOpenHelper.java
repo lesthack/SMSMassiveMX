@@ -50,14 +50,14 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value, valid) values('version','0.1', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('time_scan_host','60', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('time_dispatch','60', 1);");
-        db.execSQL("INSERT INTO parameter(name, value, valid) values('time_sleep_dispatch','1', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('time_sleep_dispatch','10', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('sms_by_dispatch','30', 1);");
-        //db.execSQL("INSERT INTO parameter(name, value) values('host_ws','https://gist.githubusercontent.com/lesthack/3706336e5e3a69b8878e6a57b3c21ad5/raw/9caff842440a6fbe767670f38deafa4b4348d436/sms.json');");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
-        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','', 0);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.estaciones.fundacionguanajuato.mx/hook.php', 1);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','https://gist.githubusercontent.com/lesthack/f6f73f5df899138298d2ebb8fba01f14/raw/452c1194a68394ec743f34ca1b913a281ad786ba/160+.json', 1);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
 
-        db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(160), sent BOOLEAN, error BOOLEAN);");
+        db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(700), sent BOOLEAN, error BOOLEAN);");
 
         db.execSQL("CREATE TABLE log(id INTEGER PRIMARY KEY AUTOINCREMENT, log_date DATE, log_text TEXT, log_type INTEGER);");
     }

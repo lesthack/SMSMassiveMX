@@ -56,7 +56,7 @@ public class CoreService extends Service {
 
     private final IBinder mBinder = new LocalBinder();
     static final boolean WEBSERVER_ACTIVE = false;
-    private final int SMS_LENGTH_MAX = 140;
+    private final int SMS_LENGTH_MAX = 700;
     private HttpService webserver = new HttpService(8080);
 
     private String HOST_WS;
@@ -212,11 +212,13 @@ public class CoreService extends Service {
                                         JSONArray campaign_dest = campaign.getJSONArray("dest");
 
                                         //Check 160 digits
+                                        /*
                                         for(int j = 0; j<campaign_sms.length(); j++){
                                             if(campaign_sms.getString(j).length()>SMS_LENGTH_MAX){
                                                 throw new CampaignsException(201, campaign_id, String.format("El mensaje \"%s\" excede los %d caracteres.", campaign_sms.getString(j), SMS_LENGTH_MAX));
                                             }
                                         }
+                                        */
 
                                         // Adding campaigns
                                         int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
