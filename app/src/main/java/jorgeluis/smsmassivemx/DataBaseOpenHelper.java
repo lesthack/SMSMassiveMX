@@ -52,10 +52,12 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value, valid) values('time_dispatch','60', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('time_sleep_dispatch','10', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('sms_by_dispatch','30', 1);");
-        db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
-        db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.estaciones.fundacionguanajuato.mx/hook.php', 1);");
-        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','https://gist.githubusercontent.com/lesthack/f6f73f5df899138298d2ebb8fba01f14/raw/452c1194a68394ec743f34ca1b913a281ad786ba/160+.json', 1);");
-        //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.estaciones.fundacionguanajuato.mx/hook.php', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','https://gist.githubusercontent.com/lesthack/f6f73f5df899138298d2ebb8fba01f14/raw/49b4e6460de30b919b270bfc21c465f25d384104/160+.json', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.siafeg.com/filtro_siafeg/json_sms.php', 1);");
+        //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.siafeg.com/filtro_siafeg/hook.php', 1);");
 
         db.execSQL("CREATE TABLE sms(id INTEGER PRIMARY KEY AUTOINCREMENT, campaign VARCHAR(15), launch_date DATETIME, phone VARCHAR(10), message VARCHAR(700), sent BOOLEAN, error BOOLEAN);");
 

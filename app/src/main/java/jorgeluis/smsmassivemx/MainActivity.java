@@ -136,7 +136,7 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_settings) {
-            Intent i = new Intent(this, SettingsActivity.class);
+            Intent i = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(i);
         } else if (id == R.id.nav_about) {
             Intent i = new Intent(MainActivity.this, AboutActivity.class);

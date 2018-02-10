@@ -5,6 +5,7 @@ package jorgeluis.smsmassivemx;
  */
 
 import android.annotation.TargetApi;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.net.LocalServerSocket;
@@ -138,9 +139,24 @@ public class CoreService extends Service {
                                 item_json.put("phone", item.get("phone"));
                                 item_json.put("date", localdb.getDateTime());
                             try{
-                                ArrayList<String> arrSMS = sm.divideMessage(item.getString("message"));
-                                sm.sendMultipartTextMessage(item.getString("phone"), null, arrSMS, null, null);
+                                // Primera version hasta 160
                                 //sm.sendTextMessage(item.getString("phone"), null, item.getString("message"), null, null);
+
+                                // Segunda version mas de 160, pero divide
+                                ArrayList<String> arrSMS = sm.divideMessage(item.getString("message"));
+                                ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
+                                ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
+
+                                Intent mSentIntent = new Intent();
+                                Intent mDeliveryIntent = new Intent();
+
+                                for(int j=0; j<arrSMS.size(); j++){
+                                    sentIntents.add(PendingIntent.getBroadcast(getBaseContext(), 0, mSentIntent, 0));
+                                    deliveryIntents.add(PendingIntent.getBroadcast(getBaseContext(), 0, mDeliveryIntent, 0));
+                                }
+
+                                sm.sendMultipartTextMessage(item.getString("phone"), null, arrSMS, sentIntents, deliveryIntents);
+
                                 addLog("Mensaje (id: " + item.getInt("id") + ") enviado (Campaña: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
                                 list_sms_sent.put(item_json);

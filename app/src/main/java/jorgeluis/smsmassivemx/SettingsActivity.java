@@ -1,36 +1,27 @@
 package jorgeluis.smsmassivemx;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
-import android.support.v7.app.AlertDialog;
-import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.List;
 
 class SettingsActivity extends PreferenceActivity {
     //private CoreService mService;
-    /*
+
     @Override
-     */
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //mService = getIntent().getParcelableExtra("mService");
         MyPreferenceFragment settings_fragment = new MyPreferenceFragment();
         getFragmentManager().beginTransaction().add(android.R.id.content, settings_fragment).commit();
+    }
+
+    @Override
+    public void onBuildHeaders(List<Header> target) {
+        loadHeadersFromResource(R.xml.settings_headers, target);
     }
 
     public static class MyPreferenceFragment extends PreferenceFragment
@@ -137,13 +128,6 @@ class SettingsActivity extends PreferenceActivity {
             });
         }
 
-    }
-    /**
-     * Populate the activity with the top-level headers.
-     */
-    @Override
-    public void onBuildHeaders(List<Header> target) {
-        loadHeadersFromResource(R.xml.settings_headers, target);
     }
 
 }
