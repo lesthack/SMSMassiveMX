@@ -144,7 +144,7 @@ public class CoreService extends Service {
 
                                 // Segunda version mas de 160, pero divide
                                 ArrayList<String> arrSMS = sm.divideMessage(item.getString("message"));
-                                ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
+                                /*ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
                                 ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
 
                                 Intent mSentIntent = new Intent();
@@ -156,6 +156,8 @@ public class CoreService extends Service {
                                 }
 
                                 sm.sendMultipartTextMessage(item.getString("phone"), null, arrSMS, sentIntents, deliveryIntents);
+                                */
+                                sm.sendMultipartTextMessage(item.getString("phone"), null, arrSMS, null, null);
 
                                 addLog("Mensaje (id: " + item.getInt("id") + ") enviado (Campaña: \"" + item.getString("campaign") + "\"): " + item.getString("message") + " -> " + item.getString("phone"), 1);
                                 localdb.markSentSMS(item.getInt("id"));
@@ -239,7 +241,7 @@ public class CoreService extends Service {
                                         // Adding campaigns
                                         int sms_inserted = localdb.addCampaignSMS(campaign_id, campaign_launch_date, campaign_dest, campaign_sms, campaign_cast);
                                         if(sms_inserted>0){
-                                            addLog("Agergando " + sms_inserted + " SMS's de la Campaña " + campaign_id);
+                                            addLog("Agregando " + sms_inserted + " SMS's de la Campaña " + campaign_id);
                                         }
                                     }
                                     else{

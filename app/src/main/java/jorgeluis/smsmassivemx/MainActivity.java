@@ -1,14 +1,17 @@
 package jorgeluis.smsmassivemx;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -85,7 +88,23 @@ public class MainActivity extends AppCompatActivity
         mItemStatusAdapter = new ItemStatusAdapter(getBaseContext(), items_status);
         listview_status.setAdapter(mItemStatusAdapter);
 
-        startAsyncTaskLog();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, 1);
+        }
+        else{
+            startAsyncTaskLog();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults){
+        switch (requestCode) {
+            case 1:{
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startAsyncTaskLog();
+                }
+            }
+        }
     }
 
     private void startAsyncTaskLog(){

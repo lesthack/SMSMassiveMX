@@ -54,7 +54,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO parameter(name, value, valid) values('sms_by_dispatch','30', 1);");
         //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.estaciones.fundacionguanajuato.mx/Json_estaciones.php', 1);");
         //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.estaciones.fundacionguanajuato.mx/hook.php', 1);");
-        db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','https://gist.githubusercontent.com/lesthack/f6f73f5df899138298d2ebb8fba01f14/raw/49b4e6460de30b919b270bfc21c465f25d384104/160+.json', 1);");
+        db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','https://gist.githubusercontent.com/lesthack/ce8ea5c467eb6245e2867ec275aea478/raw/8f7302a576e8a6540e75d0266258e62b812d9395/SMSMassiveMX.json', 1);");
         db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','', 0);");
         //db.execSQL("INSERT INTO parameter(name, value, valid) values('host_ws','http://www.siafeg.com/filtro_siafeg/json_sms.php', 1);");
         //db.execSQL("INSERT INTO parameter(name, value, valid) values('webhook','http://www.siafeg.com/filtro_siafeg/hook.php', 1);");
@@ -195,9 +195,18 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
         return sms_inserted;
     }
 
-    public int addCampaignSMS(String campaign, String launch_date, JSONArray phones, JSONArray message, Boolean cast) {
-        String[] phones_array = phones.toString().replace("[","").replace("]","").replace("\"","").split(",");
-        String[] messages_array = message.toString().replace("[","").replace("]","").replace("\"","").split(",");
+    public int addCampaignSMS(String campaign, String launch_date, JSONArray phones, JSONArray message, Boolean cast) throws JSONException {
+        //String[] phones_array = phones.toString().replace("[","").replace("]","").replace("\"","").split(",");
+        //String[] messages_array = message.toString().replace("[","").replace("]","").replace("\"","").split(",");
+        String[] phones_array = new String[phones.length()];
+        String[] messages_array = new String[message.length()];
+
+        for(int i=0;i<phones.length();i++) {
+            phones_array[i] = phones.getString(i);
+        }
+        for(int i=0;i<message.length();i++){
+            messages_array[i] = message.getString(i);
+        }
         return addCampaignSMS(campaign, launch_date, phones_array, messages_array, cast);
     }
 

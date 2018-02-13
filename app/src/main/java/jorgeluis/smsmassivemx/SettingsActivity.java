@@ -8,7 +8,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import java.util.List;
 
-class SettingsActivity extends PreferenceActivity {
+public class SettingsActivity extends PreferenceActivity {
     //private CoreService mService;
 
     @Override
